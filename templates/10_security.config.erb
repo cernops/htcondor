@@ -1,5 +1,7 @@
 # HTCondor configuration: security
 
+use SECURITY : Strong
+
 <% if @default_domain_name -%>
 DEFAULT_DOMAIN_NAME = <%= @default_domain_name %>
 <% end -%>
@@ -19,7 +21,7 @@ CMS = <%= @managers.flatten.join(', ') %>
 CES = <%= @computing_elements.flatten.join(', ') %>
 WNS = <%= @worker_nodes.flatten.join(', ') %>
 
-USERS = *@$(UID_DOMAIN)
+USERS = *@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
 
 # Clear out any old-style HOSTALLOW settings:
 HOSTALLOW_READ =
@@ -29,12 +31,43 @@ HOSTALLOW_NEGOTIATOR =
 HOSTALLOW_ADMINISTRATOR =
 HOSTALLOW_OWNER =
 
-ALLOW_NEGOTIATOR = $(COLLECTOR_HOST)
-ALLOW_NEGOTIATOR_SCHEDD = $(COLLECTOR_HOST)
-ALLOW_ADMINISTRATOR = $(COLLECTOR_HOST)
+# Administrator is the root user on the CMs
+ALLOW_ADMINISTRATOR = root@$(UID_DOMAIN)/$(CMS)
 
-ALLOW_READ = */*.$(UID_DOMAIN)
-ALLOW_WRITE = $(CMS), $(CES), $(WNS)
+# Owner is the root of the machien
+ALLOW_OWNER = root@$(UID_DOMAIN)/$(FULL_HOSTNAME)
+
+# CERN users from CERN machines can read everything
+ALLOW_READ = *@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
+
+# CERN users can submit jobs
+ALLOW_WRITE =
+SCHEDD.ALLOW_WRITE = *@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
+
+# CMs can be masters
+COLLECTOR.ALLOW_ADVERTISE_MASTER = condor-service@$(UID_DOMAIN)/$(CMS)
+
+# CEs can be schedds
+COLLECTOR.ALLOW_ADVERTISE_SCHEDD = condor-service@$(UID_DOMAIN)/$(CES)
+
+# Should be reviewed, now everybody can join the wn pool which is bad
+COLLECTOR.ALLOW_ADVERTISE_STARTD = condor-service@$(UID_DOMAIN)/$(WNS)
+
+# Schedds accept negotiation requests only from the CMs
+ALLOW_NEGOTIATOR = condor-service@$(UID_DOMAIN)/$(CMS)
+
+# No runtime configuration allowed
+ALLOW_CONFIG =
+
+# Only the service user (by host-based GSI auth) can send daemon messages
+ALLOW_DAEMON = condor-service@$(UID_DOMAIN)/$(CMS),$(CES),$(WNS)
+
+# CERN users from CERN nodes can act as clients
+ALLOW_CLIENT = *@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
+
+
+##ALLOW_READ = */*.$(UID_DOMAIN)
+##ALLOW_WRITE = $(CMS), $(CES), $(WNS)
 #debugging
 #ALLOW_READ  = $(USERS)/*.$(UID_DOMAIN), tomcat/*.$(UID_DOMAIN), ldap/*.$(UID_DOMAIN)
 #ALLOW_DAEMON = condor_pool@$(UID_DOMAIN), condor@$(UID_DOMAIN), $(FULL_HOSTNAME)
@@ -44,28 +77,27 @@ ALLOW_WRITE = $(CMS), $(CES), $(WNS)
 #NEGOTIATOR.ALLOW_WRITE = $(CES), $(CMS)
 
 #if the CE has a private NIC, it needs to be included here as well
-COLLECTOR.ALLOW_ADVERTISE_MASTER = $(CES), $(CMS), $(WNS)
-COLLECTOR.ALLOW_ADVERTISE_SCHEDD = $(CES)
-COLLECTOR.ALLOW_ADVERTISE_STARTD = $(WNS)
+##COLLECTOR.ALLOW_ADVERTISE_MASTER = $(CES), $(CMS), $(WNS)
+##COLLECTOR.ALLOW_ADVERTISE_SCHEDD = $(CES)
+##COLLECTOR.ALLOW_ADVERTISE_STARTD = $(WNS)
 
-SCHEDD.ALLOW_WRITE = $(USERS), $(CES)
+##SCHEDD.ALLOW_WRITE = $(USERS), $(CES)
 
 #SHADOW.ALLOW_WRITE = $(WNS), $(CES)
 
-ALLOW_DAEMON = condor@$(UID_DOMAIN)/*.$(UID_DOMAIN)
-ALLOW_ADMINISTRATOR = *@$(UID_DOMAIN)/$(FULL_HOSTNAME)
-ALLOW_CONFIG = root@$(FULL_HOSTNAME)
+##ALLOW_DAEMON = condor@$(UID_DOMAIN)/*.$(UID_DOMAIN)
+##ALLOW_CONFIG = root@$(FULL_HOSTNAME)
 
 # Don't allow nobody to run jobs
-SCHEDD.DENY_WRITE = nobody@$(UID_DOMAIN)
+##SCHEDD.DENY_WRITE = nobody@$(UID_DOMAIN)
 
 <% if @use_kerberos_security then -%>
 
 # Authentication
 SEC_DEFAULT_AUTHENTICATION = REQUIRED
 SEC_CLIENT_AUTHENTICATION = REQUIRED
-SEC_DEFAULT_AUTHENTICATION_METHODS = KERBEROS,GSI,FS
-SEC_CLIENT_AUTHENTICATION_METHODS = KERBEROS,GSI,FS
+SEC_DEFAULT_AUTHENTICATION_METHODS = GSI,KERBEROS
+SEC_CLIENT_AUTHENTICATION_METHODS = GSI,KERBEROS
 
 SEC_ENABLE_MATCH_PASSWORD_AUTHENTICATION = True
 CERTIFICATE_MAPFILE = /etc/condor/certificate_mapfile
