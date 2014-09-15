@@ -199,12 +199,20 @@ class htcondor::config (
     } else {
       $temp_list               = concat($default_daemon_list, $ce_daemon_list)
       $daemon_list             = concat($temp_list, $manage_daemon_list)
-      $additional_config_files = [
-        File['/etc/condor/config.d/12_resourcelimits.config'],
-        File['/etc/condor/config.d/21_schedd.config'],
-        File['/etc/condor/config.d/22_manager.config'],
-        File['/etc/condor/config.d/33_defrag.config'],
-      ]
+      if $partitionable_slots {
+        $additional_config_files = [
+          File['/etc/condor/config.d/12_resourcelimits.config'],
+          File['/etc/condor/config.d/21_schedd.config'],
+          File['/etc/condor/config.d/22_manager.config'],
+          File['/etc/condor/config.d/33_defrag.config'],
+        ]
+      } else {
+        $additional_config_files = [
+          File['/etc/condor/config.d/12_resourcelimits.config'],
+          File['/etc/condor/config.d/21_schedd.config'],
+          File['/etc/condor/config.d/22_manager.config'],
+        ]
+      }
       $config_files            = concat($common_config_files,
       $additional_config_files)
     }
@@ -229,10 +237,16 @@ class htcondor::config (
       $additional_config_files)
     } else {
       $daemon_list             = concat($default_daemon_list, $manage_daemon_list)
-      $additional_config_files = [
-        File['/etc/condor/config.d/22_manager.config'],
-        File['/etc/condor/config.d/33_defrag.config'],
-      ]
+      if $partitionable_slots {
+        $additional_config_files = [
+          File['/etc/condor/config.d/22_manager.config'],
+          File['/etc/condor/config.d/33_defrag.config'],
+        ]
+      } else {
+        $additional_config_files = [
+          File['/etc/condor/config.d/22_manager.config'],
+        ]
+      }
       $config_files            = concat($common_config_files,
       $additional_config_files)
     }
@@ -368,13 +382,15 @@ class htcondor::config (
       group => $condor_group,
       mode => 644,
     }
-     
-     file { '/etc/condor/config.d/33_defrag.config':
-      content => template($template_defrag),
-      require => Package['condor'],
-      owner => $condor_user,
-      group => $condor_group,
-      mode => 644,
+    
+    if $partitionable_slots { 
+      file { '/etc/condor/config.d/33_defrag.config':
+        content => template($template_defrag),
+        require => Package['condor'],
+        owner => $condor_user,
+        group => $condor_group,
+        mode => 644,
+      }
     }
 
     # TODO: high availability
