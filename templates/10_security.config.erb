@@ -40,20 +40,21 @@ ALLOW_OWNER = condor-service@$(UID_DOMAIN)/$(FULL_HOSTNAME)
 # CERN users from CERN machines can read everything
 ALLOW_READ = *@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
 
-# CERN users can submit jobs
+# CERN, and CE machine users can submit jobs
 ALLOW_WRITE =
 SCHEDD.ALLOW_WRITE = *@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME),*@fsauth/$(FULL_HOSTNAME)
 
-# CMs can be masters
+# All kinds of nodes can advertise master
 COLLECTOR.ALLOW_ADVERTISE_MASTER = <%= (@managers + @computing_elements + @worker_nodes).collect { |x| "condor-service@$(UID_DOMAIN)/" + x }.join(', ') %>
 
-# CEs can be schedds
+# CEs can advertise schedds
 COLLECTOR.ALLOW_ADVERTISE_SCHEDD = <%= @computing_elements.collect { |x| "condor-service@$(UID_DOMAIN)/" + x }.join(', ') %>
 
-# Should be reviewed, now everybody can join the wn pool which is bad
+# Worker nodes can advertise startds
 COLLECTOR.ALLOW_ADVERTISE_STARTD = <%= @worker_nodes.collect { |x| "condor-service@$(UID_DOMAIN)/" + x }.join(', ') %>
 
 # Schedds accept negotiation requests only from the CMs
+# NOTE: SCHEDD.ALLOW_NEGOTIATOR should be the same, but doesn't work
 ALLOW_NEGOTIATOR_SCHEDD = <%= @managers.collect { |x| "condor-service@$(UID_DOMAIN)/" + x }.join(', ') %>
 
 # No runtime configuration allowed
@@ -63,7 +64,7 @@ ALLOW_CONFIG =
 ALLOW_DAEMON = <%= (@managers + @computing_elements + @worker_nodes).collect { |x| "condor-service@$(UID_DOMAIN)/" + x }.join(', ') %>, <%= @computing_elements.collect { |x| "submit-side@matchsession/" + x }.join(', ') %>
 
 # CERN users from CERN nodes can act as clients
-# Workaround, should be reviewed!!!
+# NOTE: Workaround, should be reviewed!!!
 ALLOW_CLIENT = *
 #@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
 
@@ -94,19 +95,19 @@ QUEUE_SUPER_USERS = condor-service
 # Don't allow nobody to run jobs
 ##SCHEDD.DENY_WRITE = nobody@$(UID_DOMAIN)
 
+SEC_DEFAULT_AUTHENTICATION = REQUIRED
+SEC_CLIENT_AUTHENTICATION = REQUIRED
+
+SEC_DEFAULT_INTEGRITY  = REQUIRED
+
 <% if @use_kerberos_security then -%>
 
 # Authentication
-SEC_DEFAULT_AUTHENTICATION = REQUIRED
-SEC_CLIENT_AUTHENTICATION = REQUIRED
 SEC_DEFAULT_AUTHENTICATION_METHODS = GSI,KERBEROS,FS
 SEC_CLIENT_AUTHENTICATION_METHODS = GSI,KERBEROS,FS
 
 SEC_ENABLE_MATCH_PASSWORD_AUTHENTICATION = True
 CERTIFICATE_MAPFILE = /etc/condor/certificate_mapfile
-
-# Integrity
-SEC_DEFAULT_INTEGRITY  = REQUIRED
 
 # Encryption
 SEC_DEFAULT_ENCRYPTION = REQUIRED
@@ -115,9 +116,7 @@ SEC_DEFAULT_CRYPTO_METHODS = BLOWFISH
 <% else -%>
 # Authentication
 SEC_PASSWORD_FILE = /etc/condor/pool_password
-SEC_DEFAULT_AUTHENTICATION = REQUIRED
 SEC_READ_AUTHENTICATION = OPTIONAL
-SEC_CLIENT_AUTHENTICATION = REQUIRED
 SEC_DEFAULT_AUTHENTICATION_METHODS = PASSWORD,FS
 SCHEDD.SEC_WRITE_AUTHENTICATION_METHODS = FS,PASSWORD
 SCHEDD.SEC_DAEMON_AUTHENTICATION_METHODS = FS,PASSWORD
@@ -125,7 +124,6 @@ SEC_CLIENT_AUTHENTICATION_METHODS = FS,PASSWORD,CLAIMTOBE
 SEC_READ_AUTHENTICATION_METHODS = FS,PASSWORD,CLAIMTOBE
 
 # Integrity
-SEC_DEFAULT_INTEGRITY  = REQUIRED
 SEC_DAEMON_INTEGRITY = REQUIRED
 SEC_NEGOTIATOR_INTEGRITY = REQUIRED
 
