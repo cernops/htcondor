@@ -144,7 +144,9 @@ class htcondor (
   $partitionable_slots   = true,
   $request_memory        = true,
   $use_kerberos_security = false,
-  $certificate_mapfile   = "puppet:///modules/${caller_module_name}/certificate_mapfile",
+  $certificate_mapfile   = "puppet:///modules/${module_name}/certificate_mapfile",
+  $gsi_dn_prefix         = "/DC=ch/DC=cern/OU=computers/CN="
+  $gsi_dn_suffix         = ".*"
   $pool_home             = '/pool',
   $pool_create           = true,
   $queues                = hiera('grid_queues', undef),
@@ -216,6 +218,8 @@ class htcondor (
     partitionable_slots => $partitionable_slots,
     request_memory => $request_memory,
     use_kerberos_security => $use_kerberos_security,
+    gsi_dn_prefix  => $gsi_dn_prefix,
+    gsi_dn_suffix  => $gsi_dn_suffix,
     certificate_mapfile => $certificate_mapfile,
     pool_home      => $pool_home,
     queues         => $queues,

@@ -17,10 +17,12 @@ TRUST_UID_DOMAIN = True
 <% end -%>
 
 # Machines & users
-CMS = <%= @managers.flatten.join(', ') %>
-CES = <%= @computing_elements.flatten.join(', ') %>
-WNS = <%= @worker_nodes.flatten.join(', ') %>
-
+CMS = central-manager@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
+CES = computing-element@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
+CES_MATCH_SESSION = <%= @computing_elements.collect { |x| "submit-side@matchsession/" + x }.join(', ') %>
+WNS = worker-node@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
+THIS_HOST = <%= @is_manager ? "central-manager" : @is_ce ? "computing-element" : "worker-node" -%>@$(UID_DOMAIN)/$(FULL_HOSTNAME)
+CONDOR_HOSTS = $(CMS),$(CES),$(WNS)
 USERS = *@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
 
 # Clear out any old-style HOSTALLOW settings:
@@ -32,73 +34,48 @@ HOSTALLOW_ADMINISTRATOR =
 HOSTALLOW_OWNER =
 
 # Administrator is the root user on the CMs
-ALLOW_ADMINISTRATOR = <%= @managers.collect { |x| "condor-service@$(UID_DOMAIN)/" + x }.join(', ') %>
+ALLOW_ADMINISTRATOR = $(CMS)
 
-# Owner is the root of the machien
-ALLOW_OWNER = condor-service@$(UID_DOMAIN)/$(FULL_HOSTNAME)
+# Owner is the root of the machine
+ALLOW_OWNER = $(THIS_HOST)
 
 # CERN users from CERN machines can read everything
-ALLOW_READ = *@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
+ALLOW_READ = $(USERS)
 
 # CERN, and CE machine users can submit jobs
 ALLOW_WRITE =
-SCHEDD.ALLOW_WRITE = *@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME),*@fsauth/$(FULL_HOSTNAME)
+SCHEDD.ALLOW_WRITE = $(USERS),*@fsauth/$(FULL_HOSTNAME)
 
 # All kinds of nodes can advertise master
-COLLECTOR.ALLOW_ADVERTISE_MASTER = <%= (@managers + @computing_elements + @worker_nodes).collect { |x| "condor-service@$(UID_DOMAIN)/" + x }.join(', ') %>
+COLLECTOR.ALLOW_ADVERTISE_MASTER = $(CONDOR_HOSTS)
 
 # CEs can advertise schedds
-COLLECTOR.ALLOW_ADVERTISE_SCHEDD = <%= @computing_elements.collect { |x| "condor-service@$(UID_DOMAIN)/" + x }.join(', ') %>
+COLLECTOR.ALLOW_ADVERTISE_SCHEDD = $(CMS)
 
 # Worker nodes can advertise startds
-COLLECTOR.ALLOW_ADVERTISE_STARTD = <%= @worker_nodes.collect { |x| "condor-service@$(UID_DOMAIN)/" + x }.join(', ') %>
+COLLECTOR.ALLOW_ADVERTISE_STARTD = $(WNS)
 
 # Schedds accept negotiation requests only from the CMs
-# NOTE: SCHEDD.ALLOW_NEGOTIATOR should be the same, but doesn't work
-ALLOW_NEGOTIATOR_SCHEDD = <%= @managers.collect { |x| "condor-service@$(UID_DOMAIN)/" + x }.join(', ') %>
+# NOTE: SCHEDD.ALLOW_NEGOTIATOR should be the same, but doesn't work (Condor bug)
+ALLOW_NEGOTIATOR_SCHEDD = $(CMS)
 
 # No runtime configuration allowed
 ALLOW_CONFIG =
 
 # Only the service user (by host-based GSI auth) can send daemon messages
-ALLOW_DAEMON = <%= (@managers + @computing_elements + @worker_nodes).collect { |x| "condor-service@$(UID_DOMAIN)/" + x }.join(', ') %>, <%= @computing_elements.collect { |x| "submit-side@matchsession/" + x }.join(', ') %>
+ALLOW_DAEMON = $(CONDOR_HOSTS),$(CES_MATCH_SESSION)
 
 # CERN users from CERN nodes can act as clients
-# NOTE: Workaround, should be reviewed!!!
+# NOTE: Nasty workaround for a bug in condor, should be reviewed!!!
 ALLOW_CLIENT = *
 #@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
 
-QUEUE_SUPER_USERS = condor-service
-
-##ALLOW_READ = */*.$(UID_DOMAIN)
-##ALLOW_WRITE = $(CMS), $(CES), $(WNS)
-#debugging
-#ALLOW_READ  = $(USERS)/*.$(UID_DOMAIN), tomcat/*.$(UID_DOMAIN), ldap/*.$(UID_DOMAIN)
-#ALLOW_DAEMON = condor_pool@$(UID_DOMAIN), condor@$(UID_DOMAIN), $(FULL_HOSTNAME)
-#ALLOW_ADMINISTRATOR = root@$(UID_DOMAIN)/$(IP_ADDRESS), $(CMS)
-#ALLOW_CONFIG = root@$(FULL_HOSTNAME)
-
-#NEGOTIATOR.ALLOW_WRITE = $(CES), $(CMS)
-
-#if the CE has a private NIC, it needs to be included here as well
-##COLLECTOR.ALLOW_ADVERTISE_MASTER = $(CES), $(CMS), $(WNS)
-##COLLECTOR.ALLOW_ADVERTISE_SCHEDD = $(CES)
-##COLLECTOR.ALLOW_ADVERTISE_STARTD = $(WNS)
-
-##SCHEDD.ALLOW_WRITE = $(USERS), $(CES)
-
-#SHADOW.ALLOW_WRITE = $(WNS), $(CES)
-
-##ALLOW_DAEMON = condor@$(UID_DOMAIN)/*.$(UID_DOMAIN)
-##ALLOW_CONFIG = root@$(FULL_HOSTNAME)
-
-# Don't allow nobody to run jobs
-##SCHEDD.DENY_WRITE = nobody@$(UID_DOMAIN)
+QUEUE_SUPER_USERS = central-manager,computing-element
 
 SEC_DEFAULT_AUTHENTICATION = REQUIRED
 SEC_CLIENT_AUTHENTICATION = REQUIRED
 
-SEC_DEFAULT_INTEGRITY  = REQUIRED
+SEC_DEFAULT_INTEGRITY = REQUIRED
 
 <% if @use_kerberos_security then -%>
 

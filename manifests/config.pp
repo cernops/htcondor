@@ -121,6 +121,8 @@ class htcondor::config (
   $partitionable_slots = true,
   $request_memory = true,
   $use_kerberos_security = false,
+  $gsi_dn_prefix         = "/DC=ch/DC=cern/OU=computers/CN="
+  $gsi_dn_suffix         = ".*"
   $certificate_mapfile = "puppet:///modules/${module_name}/certificate_mapfile",
   # pool_password can also be served from central file location using hiera
   $pool_password  = "puppet:///modules/${module_name}/pool_password",
@@ -161,6 +163,7 @@ class htcondor::config (
   $ce_daemon_list      = ['SCHEDD']
   $worker_daemon_list  = ['STARTD']
   $ganglia_daemon_list = ['GANGLIAD']
+#KERBEROS ^host/([^@]*)@(.*)$ condor-service@\2
   if $enable_multicore { 
     $manage_daemon_list  = ['COLLECTOR', 'NEGOTIATOR', 'DEFRAG'] }
   else {
