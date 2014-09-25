@@ -121,8 +121,8 @@ class htcondor::config (
   $partitionable_slots = true,
   $request_memory = true,
   $use_kerberos_security = false,
-  $gsi_dn_prefix         = "/DC=ch/DC=cern/OU=computers/CN="
-  $gsi_dn_suffix         = ".*"
+  $gsi_dn_prefix         = "/DC=ch/DC=cern/OU=computers/CN=",
+  $gsi_dn_suffix         = ".*",
   $certificate_mapfile = "puppet:///modules/${module_name}/certificate_mapfile",
   # pool_password can also be served from central file location using hiera
   $pool_password  = "puppet:///modules/${module_name}/pool_password",
