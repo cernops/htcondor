@@ -310,7 +310,7 @@ class htcondor::config (
   if $use_kerberos_security {
       file { '/etc/condor/certificate_mapfile':
         ensure => present,
-        content => template($ctemplate_ertificate_mapfile),
+        content => template($template_certificate_mapfile),
         owner => $condor_user,
         group => $condor_group,
         mode => 600,
