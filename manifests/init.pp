@@ -221,7 +221,6 @@ class htcondor (
     use_kerberos_security => $use_kerberos_security,
     gsi_dn_prefix  => $gsi_dn_prefix,
     gsi_dn_suffix  => $gsi_dn_suffix,
-    certificate_mapfile => $certificate_mapfile,
     pool_home      => $pool_home,
     queues         => $queues,
     periodic_expr_interval => $periodic_expr_interval,
