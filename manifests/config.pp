@@ -123,7 +123,6 @@ class htcondor::config (
   $use_kerberos_security = false,
   $gsi_dn_prefix         = "/DC=ch/DC=cern/OU=computers/CN=",
   $gsi_dn_suffix         = ".*",
-  $certificate_mapfile = "puppet:///modules/${module_name}/certificate_mapfile",
   # pool_password can also be served from central file location using hiera
   $pool_password  = "puppet:///modules/${module_name}/pool_password",
   $pool_home      = '/pool',
@@ -157,6 +156,7 @@ class htcondor::config (
   $template_workernode      = "${module_name}/20_workernode.config.erb",
   $template_ganglia         = "${module_name}/23_ganglia.config.erb",
   $template_defrag          = "${module_name}/33_defrag.config.erb",
+  $template_certificate_mapfile = "${module_name}/certificate_mapfile.erb",
   
   ) {
   $now                 = strftime('%d.%m.%Y_%H.%M')
@@ -310,9 +310,10 @@ class htcondor::config (
   if $use_kerberos_security {
       file { '/etc/condor/certificate_mapfile':
         ensure => present,
-        source => $certificate_mapfile,
+        content => template($ctemplate_ertificate_mapfile),
         owner => $condor_user,
         group => $condor_group,
+        mode => 600,
       }
   } else {
       #even if condor runs as condor, it just drops privileges and needs to start as root.

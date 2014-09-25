@@ -178,6 +178,7 @@ class htcondor (
   $template_manager         = "${module_name}/22_manager.config.erb",
   $template_workernode      = "${module_name}/20_workernode.config.erb",
   $template_defrag          = "${module_name}/33_defrag.config.erb",
+  $template_certificate_mapfile = "${module_name}/certificate_mapfile.erb",
   
   ) {
   class { 'htcondor::repositories':
@@ -249,7 +250,8 @@ class htcondor (
     template_fairshares => $template_fairshares,
     template_manager => $template_manager,
     template_workernode => $template_workernode,
-    template_defrag => $template_defrag,  
+    template_defrag => $template_defrag,
+    template_certificate_mapfile => $template_certificate_mapfile,
   }
 
   class { 'htcondor::service':
