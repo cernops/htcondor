@@ -98,6 +98,8 @@ ALLOW_WRITE = $(CMS), $(CES), $(WNS)
 ALLOW_NEGOTIATOR_SCHEDD = $(CMS)
 #if the CE has a private NIC, it needs to be included here as well
 COLLECTOR.ALLOW_ADVERTISE_MASTER = $(CES), $(CMS), $(WNS)
+COLLECTOR.ALLOW_ADVERTISE_SCHEDD = $(CES)
+COLLECTOR.ALLOW_ADVERTISE_STARTD = $(WNS)
 
 SCHEDD.ALLOW_WRITE = $(USERS), $(CES)
 
@@ -125,7 +127,6 @@ CERTIFICATE_MAPFILE = /etc/condor/certificate_mapfile
 # Encryption
 SEC_DEFAULT_ENCRYPTION = REQUIRED
 SEC_DEFAULT_CRYPTO_METHODS = BLOWFISH
-
 <% else -%>
 # Authentication
 SEC_PASSWORD_FILE = /etc/condor/pool_password
