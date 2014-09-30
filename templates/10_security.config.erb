@@ -1,6 +1,8 @@
 # HTCondor configuration: security
 
+<% if @use_strong_security -%>
 use SECURITY : Strong
+<% end -%>
 
 <% if @default_domain_name -%>
 DEFAULT_DOMAIN_NAME = <%= @default_domain_name %>
@@ -17,6 +19,7 @@ TRUST_UID_DOMAIN = True
 <% end -%>
 
 # Machines & users
+<% if @use_strong_security -%>
 CMS = central-manager@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
 CES = computing-element@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
 CES_MATCH_SESSION = <%= @computing_elements.collect { |x| "submit-side@matchsession/" + x }.join(', ') %>
@@ -24,6 +27,13 @@ WNS = worker-node@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
 THIS_HOST = <%= @is_manager ? "central-manager" : @is_ce ? "computing-element" : "worker-node" -%>@$(UID_DOMAIN)/$(FULL_HOSTNAME)
 CONDOR_HOSTS = $(CMS),$(CES),$(WNS)
 USERS = *@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
+<% else -%>
+CMS = <%= @managers.flatten.join(', ') %>
+CES = <%= @computing_elements.flatten.join(', ') %>
+WNS = <%= @worker_nodes.flatten.join(', ') %>
+
+USERS = *@$(UID_DOMAIN)
+<% end -%>
 
 # Clear out any old-style HOSTALLOW settings:
 HOSTALLOW_READ =
@@ -33,6 +43,7 @@ HOSTALLOW_NEGOTIATOR =
 HOSTALLOW_ADMINISTRATOR =
 HOSTALLOW_OWNER =
 
+<% if @use_strong_security -%>
 # Administrator is the root user on the CMs
 ALLOW_ADMINISTRATOR = $(CMS)
 
@@ -69,6 +80,31 @@ ALLOW_DAEMON = $(CONDOR_HOSTS),$(CES_MATCH_SESSION)
 # NOTE: Nasty workaround for a bug in condor, should be reviewed!!!
 ALLOW_CLIENT = *
 #@$(UID_DOMAIN)/*.$(DEFAULT_DOMAIN_NAME)
+<% else -%>
+HOSTALLOW_NEGOTIATOR = $(COLLECTOR_HOST)
+HOSTALLOW_ADMINISTRATOR = $(COLLECTOR_HOST)
+HOSTALLOW_NEGOTIATOR_SCHEDD = $(COLLECTOR_HOST)
+
+ALLOW_READ = */*.$(UID_DOMAIN)
+ALLOW_WRITE = $(CMS), $(CES), $(WNS)
+#debugging
+#ALLOW_READ  = $(USERS)/*.$(UID_DOMAIN), tomcat/*.$(UID_DOMAIN), ldap/*.$(UID_DOMAIN)
+#ALLOW_DAEMON = condor_pool@$(UID_DOMAIN), condor@$(UID_DOMAIN), $(FULL_HOSTNAME)
+#ALLOW_ADMINISTRATOR = root@$(UID_DOMAIN)/$(IP_ADDRESS), $(CMS)
+#ALLOW_CONFIG = root@$(FULL_HOSTNAME)
+
+#NEGOTIATOR.ALLOW_WRITE = $(CES), $(CMS)
+
+ALLOW_NEGOTIATOR_SCHEDD = $(CMS)
+#if the CE has a private NIC, it needs to be included here as well
+COLLECTOR.ALLOW_ADVERTISE_MASTER = $(CES), $(CMS), $(WNS)
+
+SCHEDD.ALLOW_WRITE = $(USERS), $(CES)
+
+ALLOW_DAEMON = condor@$(UID_DOMAIN)/*.$(UID_DOMAIN)
+ALLOW_ADMINISTRATOR = *@$(UID_DOMAIN)/$(FULL_HOSTNAME)
+ALLOW_CONFIG = root@$(FULL_HOSTNAME)
+<% end -%>
 
 QUEUE_SUPER_USERS = central-manager,computing-element
 
@@ -77,7 +113,7 @@ SEC_CLIENT_AUTHENTICATION = REQUIRED
 
 SEC_DEFAULT_INTEGRITY = REQUIRED
 
-<% if @use_kerberos_security then -%>
+<% if @use_strong_security then -%>
 
 # Authentication
 SEC_DEFAULT_AUTHENTICATION_METHODS = GSI,KERBEROS,FS

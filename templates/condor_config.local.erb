@@ -1,6 +1,6 @@
 CONDOR_IDS = <%= @condor_uid %>.<%= @condor_gid %>
 CONDOR_ADMIN = <%= @condor_admin_email %>
-<% if @use_kerberos_security -%>
+<% if @use_strong_security -%>
 use_x509userproxy = False
 <% else -%>
 use_x509userproxy = True
